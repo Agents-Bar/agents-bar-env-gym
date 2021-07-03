@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import gym
 from fastapi import APIRouter, HTTPException
@@ -34,10 +34,12 @@ def create_env(gym_name: str):
 
 
 @router.post('/env/reset', response_model=ObservationType)
-def reset_env() -> ObservationType:
+def reset_env(seed: Optional[int] = None) -> ObservationType:
     "Reset the environment to initial position."
     global env
     env = check_env(env)
+    if seed:
+        env.seed(seed)
     observation = env.reset()
     obs = to_list(observation)
     return obs
@@ -83,6 +85,27 @@ def set_seed(seed: int) -> None:
     env = check_env(env)
     env.seed(seed)
     return None
+
+def extract_space_info(space) -> Dict[str, Any]:
+    if "Discret" in str(space):
+        return dict(type=str(space.dtype), shape=space.n)
+    else:
+        return {
+            "low": space.low.tolist(),
+            "high": space.high.tolist(),
+            "shape": space.shape,
+            "type": str(space.dtype),
+        }
+    
+@router.get('/env/info')
+def get_env_info() -> Dict[str, Any]:
+    assert env
+    obs_space = env.observation_space
+    action_space = env.action_space
+    return {
+        "observation_space": extract_space_info(obs_space),
+        "action_space": extract_space_info(action_space)
+    }
 
 
 def check_env(env: Optional[gym.Env]) -> gym.Env:
