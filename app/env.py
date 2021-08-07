@@ -64,7 +64,7 @@ def post_step(env_action: EnvActionType):
 
 @router.post('/env/commit', response_model=EnvStepType)
 def post_commit() -> EnvStepType:
-    "Commit last sent step data."
+    "Commit last provided Step data"
     global env, last_actions, last_step
     env = check_env(env)
     last_step = commit(env, last_actions)
@@ -73,7 +73,7 @@ def post_commit() -> EnvStepType:
 
 @router.get('/env/last', response_model=EnvStepType)
 def get_last() -> EnvStepType:
-    "Retrieve last provided Step data."
+    "Retrieves last provided Step data"
     if last_step is None:
         raise HTTPException(404, detail="No environment information to return")
     return last_step
@@ -87,18 +87,31 @@ def set_seed(seed: int) -> None:
     return None
 
 def extract_space_info(space) -> Dict[str, Any]:
-    if "Discret" in str(space):
-        return dict(type=str(space.dtype), shape=space.n)
+    if isinstance(space, gym.spaces.multi_discrete.MultiDiscrete):
+        return dict(
+            dtype=str(space.dtype),
+            shape=[len(space.nvec)],
+            low=0,
+            high=to_list(space.nvec),
+        )
+    elif "Discret" in str(space):
+        return dict(
+            dtype=str(space.dtype),
+            shape=[1],
+            low=0,
+            high=space.n - 1,  # Inclusive bounds, so n=2 -> [0,1]
+        )
     else:
         return {
             "low": space.low.tolist(),
             "high": space.high.tolist(),
             "shape": space.shape,
-            "type": str(space.dtype),
+            "dtype": str(space.dtype),
         }
     
 @router.get('/env/info')
 def get_env_info() -> Dict[str, Any]:
+    "Get Environment related information"
     assert env
     obs_space = env.observation_space
     action_space = env.action_space
