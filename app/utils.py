@@ -1,6 +1,8 @@
+from typing import Any, Dict, List
+
+import gym
 import numpy
 
-from typing import List
 
 def to_list(obj: object) -> List:
     if isinstance(obj, list):
@@ -10,3 +12,27 @@ def to_list(obj: object) -> List:
 
     # Just try...
     return list(obj)
+
+
+def extract_space_info(space) -> Dict[str, Any]:
+    if isinstance(space, gym.spaces.multi_discrete.MultiDiscrete):
+        return dict(
+            dtype=str(space.dtype),
+            shape=[len(space.nvec)],
+            low=0,
+            high=to_list(space.nvec),
+        )
+    elif "Discret" in str(space):
+        return dict(
+            dtype=str(space.dtype),
+            shape=[1],
+            low=0,
+            high=space.n - 1,  # Inclusive bounds, so n=2 -> [0,1]
+        )
+    else:
+        return dict(
+            low=space.low.tolist(),
+            high=space.high.tolist(),
+            shape=space.shape,
+            dtype=str(space.dtype),
+        )

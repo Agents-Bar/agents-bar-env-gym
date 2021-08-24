@@ -8,7 +8,7 @@ from gym.spaces.discrete import Discrete
 
 from app.types import (ActionType, EnvActionType, EnvStepType, ObservationType,
                        assert_action, assert_action_for_env)
-from app.utils import to_list
+from app.utils import extract_space_info, to_list
 
 # Initiate module with setting up a server
 router = APIRouter()
@@ -78,6 +78,7 @@ def get_last() -> EnvStepType:
         raise HTTPException(404, detail="No environment information to return")
     return last_step
 
+
 @router.post('/env/seed')
 def set_seed(seed: int) -> None:
     "Set seed for environment's random number generator."
@@ -86,38 +87,24 @@ def set_seed(seed: int) -> None:
     env.seed(seed)
     return None
 
-def extract_space_info(space) -> Dict[str, Any]:
-    if isinstance(space, gym.spaces.multi_discrete.MultiDiscrete):
-        return dict(
-            dtype=str(space.dtype),
-            shape=[len(space.nvec)],
-            low=0,
-            high=to_list(space.nvec),
-        )
-    elif "Discret" in str(space):
-        return dict(
-            dtype=str(space.dtype),
-            shape=[1],
-            low=0,
-            high=space.n - 1,  # Inclusive bounds, so n=2 -> [0,1]
-        )
-    else:
-        return {
-            "low": space.low.tolist(),
-            "high": space.high.tolist(),
-            "shape": space.shape,
-            "dtype": str(space.dtype),
-        }
     
 @router.get('/env/info')
 def get_env_info() -> Dict[str, Any]:
-    "Get Environment related information"
+    """Environment related information.
+    
+    The very least this method should provide:
+    * key: observation_space, value: expected Space type for observation
+    * key: action_space, value: expected Space type for action
+    * key: num_agents, value: int of agents to support
+
+    """
     assert env
     obs_space = env.observation_space
     action_space = env.action_space
     return {
         "observation_space": extract_space_info(obs_space),
-        "action_space": extract_space_info(action_space)
+        "action_space": extract_space_info(action_space),
+        "num_agents": 1,
     }
 
 
