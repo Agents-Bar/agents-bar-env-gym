@@ -31,8 +31,8 @@ def extract_space_info(space) -> Dict[str, Any]:
         )
     else:
         return dict(
-            low=space.low.tolist(),
-            high=space.high.tolist(),
+            low=numpy.nan_to_num(space.low).tolist(),
+            high=numpy.nan_to_num(space.high).tolist(),
             shape=space.shape,
             dtype=str(space.dtype),
         )

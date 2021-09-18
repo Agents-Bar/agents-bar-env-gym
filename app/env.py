@@ -23,6 +23,7 @@ last_step: Optional[EnvStepType] = None
 def create_env(gym_name: str):
     "Create environment based on the OpenAI Gym"
     global env
+    logging.info("Setting gym with gym_name='%s'", gym_name)
     try:
         env = gym.make(gym_name)
         if env is not None:

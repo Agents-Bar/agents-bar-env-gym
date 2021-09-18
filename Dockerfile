@@ -3,13 +3,15 @@ FROM python:3.8-slim
 # set path to our python api file
 ENV MODULE_NAME="app.main"
 
-# Install packages directly here to limit rebuilding on code changes
-RUN pip install uvicorn~=0.13.4 fastapi~=0.63.0 pydantic~=1.7.3
-RUN pip install requests~=2.25.1
-RUN pip install gym~=0.18.0
+# TODO: Separate into build stage and move dependencies
+RUN apt-get update && apt-get install -y swig gcc g++ cmake zlib1g-dev
 
-COPY ./ /app
+WORKDIR /app/agents-bar/env
+COPY ./requirements.txt .
+RUN pip install -r requirements.txt
 
-LABEL agents-bar-env=v0.1.0
+COPY ./ .
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--app-dir", "/app"]
+LABEL agents-bar-env=v0.2.0
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--app-dir", "/app/agents-bar/env"]
